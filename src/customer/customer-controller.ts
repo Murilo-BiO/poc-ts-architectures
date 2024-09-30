@@ -4,11 +4,12 @@ import { AlreadyExistsError, BaseError, ensureError, NotFoundError, ParsingError
 import { only } from "utils/only"
 import type { CustomerCreationUsecase } from "./usecases/create-customer"
 import type { CustomerUpdateUsecase } from "./usecases/update-customer"
+import { Interface } from "utils/type"
 
 export function registerCustomerRoutes(deps: {
   httpServer: FastifyInstance,
-  customerCreation: CustomerCreationUsecase
-  customerUpdate: CustomerUpdateUsecase
+  customerCreation: Interface<CustomerCreationUsecase>
+  customerUpdate: Interface<CustomerUpdateUsecase>
 }) {
   const { httpServer: app } = deps
 
