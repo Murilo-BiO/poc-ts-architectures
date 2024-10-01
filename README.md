@@ -1,9 +1,9 @@
 # POC: TypeScript Architectures
 
-Implementation of 2 Use Cases using different approaches of error handling.
+Implementation of 3 Use Cases using different approaches of error handling.
 
 ## Motivation
-Verify if auxiliary types like `Result` and `Option` improves readability, code quality and maintainability, when compared to error handling using `try {} catch {}`.
+Verify if auxiliary types like `Result` and `Option` improves readability, code quality and maintainability, when compared to error handling using `try {} catch {}` and using conventions alongside with language features such as typescript tuples to represent a result like return tuple: `[Error?, T?]`.
 
 And keep related code together, in a Feature oriented organization, to see if it also improves organization and maintainability.
 
@@ -62,7 +62,10 @@ The folder structure example above has just a `main.ts` file. But it could be a 
 The `main.ts` file is where we compose and instantiate the components of the application and start the application. If we had a more complex application like having a HTTP server, TCP server, Background Jobs, and more. We could break them into different files and simplify the main entrypoint file, all inside a `main/` folder.
 
 ## Error Handling
-This POC uses 2 approaches to error handling, one using a `Result<T, E>` type and another using just `try {} catch {}` blocks.
+This POC uses 3 approaches to error handling:
+1. one using a `Result<T, E>` type
+2. another using just `try {} catch {}` blocks.
+3. and the last one using the result-like tuple `[Error?, T?]`
 
 > ⚠️ **Disclaimer:** the `try {} catch {}` currently short-circuits the flow by throwing errors, we could return errors as values too. Maybe we can implement a third usecase where we can use this approach.
 
@@ -77,8 +80,55 @@ In the usecases, we also make a simple handling of the errors of dependencies, b
 ### The `Result` Type
 It is a representation of a discriminated union of `Ok<T, E> | Err<T, E>`, where `Ok<T, E>` represents the success case of a result and the `Err<T, E>` represents the failure case of a result. This type was inspired by the Rust's Result Enum.
 
+### The Result-like Tuple
+Instead of representing a union of `Error | T` where the discrimination could be hard if not impossible in some cases, and instead of using a wrapper type, the result-like tuple, works alongside with a convention that the first element of the tuple is always the error type, where both the Failure case (the first element) and the Success case (the actual return type) are marked as optional with the `?` operator.
+
+So if a function returns a `number` could fail, it's signature would be:
+```ts
+function getLuckyNumber(): [Error?, number?];
+```
+
+While a function that returns `void` and could fail, would have this signature:
+```ts
+function runStuff(): [Error?];
+```
+Having a single type in the tuple.
+
+To consume those functions, we can use the [Destructuring Assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#syntax) feature:
+```ts
+// Get both variables to check if it was error and use the value
+const [getNumErr, luckyNumber] = getLuckyNumber()
+
+// Get only the error since it's the only return type inside the tuple, to check if the function ran successfully
+const [runErr] = runStuff()
+
+// This way, we can ignore errors explicitly by not using the first parameter of the tuple
+const [, luckyNumber] = getLuckyNumber()
+```
+
+The down side of this is that both the error and the returned data are a union between its type and `undefined`. So, the type system treats every succes as an "optional".
+```ts
+const [getNumErr, luckyNumber] = getLuckyNumber()
+//     ^? Error | undefined
+const [getNumErr, luckyNumber] = getLuckyNumber()
+//                ^? number | undefined
+```
+
+We can make the verification if the value is present, or we can look at the implementation of the function to know if it is in fact optional or not and then use the [Non-null Assertion Operator](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html#non-null-assertion-operator) `!` to tell the compiler that the value is not undefined.
+
+The other option is to use `null` to explicitly mark optional cases, like:
+```ts
+// A function that can fail and in case of success maybe returns a number
+function getLuckyNumber(): [Error?, (number | null)?]
+```
+
+This approach relies heavily on conventions.
+
 ## Null Handling
-There are also 2 ways we handled this, one using the `Option<T>` type and another using a union type of `T | undefined` without a wrapper type.
+There are also 3 ways we handled this:
+1. using the `Option<T>` type
+2. using a union type of `T | undefined` without a wrapper type
+3. using the `?` optional marker in type definitions.
 
 The `Option<T>` is inspired by the Rust's Option Enum.
 
