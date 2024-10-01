@@ -13,6 +13,9 @@ export type CustomerRepository = {
   findById2(id: Customer['id']): Promise<[Customer?]>
   findByName2(name: string): Promise<[Customer?]>
   save2(customer: Customer): Promise<void>
+
+  save3(customer: Customer): Promise<[BaseError?]>
+  findById3(id: Customer['id']): Promise<[BaseError?, Customer?]>
 }
 
 export class InMemoryCustomerRepository implements CustomerRepository {
@@ -89,5 +92,25 @@ export class InMemoryCustomerRepository implements CustomerRepository {
       throw this.options.errorToThrow
 
     return [this.db.find(c => c.name === name)]
+  }
+
+  async save3(customer: Customer): Promise<[BaseError?]> {
+    if (this.options.errorToThrow)
+      return [this.options.errorToThrow]
+
+    const idx = this.db.findIndex(c => c.id === customer.id)
+    if (idx < 0)
+      this.db.push(customer)
+    else
+      this.db[idx] = customer
+
+    return []
+  }
+
+  async findById3(id: Customer['id']): Promise<[BaseError?, Customer?]> {
+    if (this.options.errorToThrow)
+      return [this.options.errorToThrow, ]
+
+    return [, this.db.find(c => c.id === id)]
   }
 }

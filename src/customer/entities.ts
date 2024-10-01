@@ -12,6 +12,7 @@ const customer = z.object({
   name: z.string(),
   creationDate: z.date(),
   createdBy: userId,
+  deleted: z.boolean(),
   updatedAt: z.date(),
   updatedBy: userId,
 })

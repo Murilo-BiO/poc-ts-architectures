@@ -3,12 +3,13 @@ import { Customer, CustomerUpdatePayload } from "customer/entities";
 import { User } from "user/entities";
 import { ActionFailedError, AlreadyExistsError, ensureError, NotFoundError, SearchFailedError } from "utils/error";
 import { only } from "utils/only";
+import { Prettify } from "utils/type";
 
-type DTO = {
+type DTO = Prettify<{
   userId: User['id']
   customerId: Customer['id']
   payload: CustomerUpdatePayload
-}
+}>
 
 export class CustomerUpdateUsecase {
   constructor(private readonly deps: {
@@ -27,10 +28,13 @@ export class CustomerUpdateUsecase {
       )
     }
 
-    if (!customer)
+    if (!customer || customer.deleted)
       throw new NotFoundError(
         'Customer not Found',
-        { context: only(dto, ['userId', 'customerId']) }
+        { context: {
+          ...only(dto, ['userId', 'customerId']),
+          softDeleted: customer ? customer.deleted : undefined
+        } }
       )
 
     if (dto.payload.name) {
@@ -45,7 +49,7 @@ export class CustomerUpdateUsecase {
         )
       }
 
-      if (otherCustomer)
+      if (otherCustomer && otherCustomer.id !== dto.customerId)
         throw new AlreadyExistsError(
           'Could not update customer. New name is already in use.',
           {

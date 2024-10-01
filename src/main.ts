@@ -7,6 +7,7 @@ import { NanoCustomerIdGenerator } from 'customer/customer-id-generator'
 import { Customer } from 'customer/entities'
 import { CustomerUpdateUsecase } from 'customer/usecases/update-customer'
 import { registerAuthenticationRoutes } from 'authentication/authentication-controller'
+import { CustomerDeletionUsecase } from 'customer/usecases/delete-customer'
 
 const server = makeServer()
 
@@ -22,6 +23,9 @@ async function main() {
       customerRepo,
     }),
     customerUpdate: new CustomerUpdateUsecase({
+      customerRepo,
+    }),
+    customerDeletion: new CustomerDeletionUsecase({
       customerRepo,
     })
   })

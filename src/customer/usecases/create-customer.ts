@@ -57,6 +57,7 @@ export class CustomerCreationUsecase {
     const creationResult = await this.deps.customerRepo.save({
       id: customerId,
       name: dto.name,
+      deleted: false,
       creationDate: today,
       createdBy: userId,
       updatedAt: today,

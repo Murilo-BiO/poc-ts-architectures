@@ -28,6 +28,13 @@ export class Schema<T> {
       : { success: false, error: this.adaptError(parseResult.error) }
   }
 
+  public parse3(data: unknown): [ParsingError?, T?] {
+    const parseResult = this.zodSchema.safeParse(data)
+    return parseResult.success
+      ? [, parseResult.data]
+      : [this.adaptError(parseResult.error), ]
+  }
+
   private adaptError<T>(error: z.ZodError<T>): ParsingError {
     const issues = error.issues.map(({
       path,

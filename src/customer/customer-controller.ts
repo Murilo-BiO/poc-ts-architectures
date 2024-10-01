@@ -5,11 +5,13 @@ import { only } from "utils/only"
 import type { CustomerCreationUsecase } from "./usecases/create-customer"
 import type { CustomerUpdateUsecase } from "./usecases/update-customer"
 import { Interface } from "utils/type"
+import { CustomerDeletionUsecase } from "./usecases/delete-customer"
 
 export function registerCustomerRoutes(deps: {
   httpServer: FastifyInstance,
   customerCreation: Interface<CustomerCreationUsecase>
   customerUpdate: Interface<CustomerUpdateUsecase>
+  customerDeletion: Interface<CustomerDeletionUsecase>
 }) {
   const { httpServer: app } = deps
 
@@ -91,6 +93,42 @@ export function registerCustomerRoutes(deps: {
         req.log.error(error)
         return res.status(500).send({ message: 'Internal Server Error' })
       }
+    }
+  })
+
+  app.route<{ Params: { customerId: string } }>({
+    method: 'DELETE',
+    url: '/customers/:customerId',
+    preHandler: (req, res, done) => {
+      if (!req.session.userId)
+        res.status(401).send({ message: 'Unauthenticated' })
+      done()
+    },
+    handler: async (req, res) => {
+      const userId = req.session.userId
+      const [parseErr, customerId] = customerIdSchema.parse3(req.params.customerId)
+
+      if (parseErr)
+        return res.status(400).send({
+          message: req.params.customerId ? 'Invalid customerId in URL params' : 'Missing customerId in URL params',
+          issues: parseErr.context
+        })
+
+      const [deletionErr] = await deps.customerDeletion.execute({
+        customerId: customerId!,
+        userId
+      })
+
+      if (deletionErr) {
+        req.log.debug(deletionErr)
+        if (deletionErr instanceof NotFoundError)
+          return res.status(404).send({ message: 'Resource Not Found' })
+        
+        req.log.error(deletionErr)
+        return res.status(500).send({ message: "Internal Server Error" })
+      }
+
+      return res.status(204).send()
     }
   })
 

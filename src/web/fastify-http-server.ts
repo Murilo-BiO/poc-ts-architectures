@@ -16,10 +16,12 @@ export const makeServer = () => {
     colorize: true,
   })
 
+  const isDevEnv = process.env.NODE_ENV === 'development'
+
   const server = fastify({
     logger: {
-      level: 'info',
-      stream: process.env.NODE_ENV === 'development' ? stream : undefined
+      level: isDevEnv ? 'debug' : 'info',
+      stream: isDevEnv ? stream : undefined
     },
     disableRequestLogging: true,
   })
