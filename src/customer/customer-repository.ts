@@ -1,5 +1,5 @@
 import { err, ok, Result } from "utils/result"
-import { Customer } from "./entities"
+import { Customer } from "./customer.entities"
 import { none, Option, some } from "utils/option"
 import { ActionFailedError, BaseError, NotFoundError } from "utils/error"
 import { only } from "utils/only"

@@ -1,11 +1,11 @@
 import { FastifyInstance } from "fastify"
-import { customerCreationPayloadSchema, customerIdSchema, customerUpdatePayloadSchema } from "./entities"
+import { customerCreationPayloadSchema, customerIdSchema, customerUpdatePayloadSchema } from "../customer.entities"
 import { AlreadyExistsError, BaseError, ensureError, NotFoundError, ParsingError, UnexpectedCollisionError } from "utils/error"
 import { only } from "utils/only"
-import type { CustomerCreationUsecase } from "./usecases/create-customer"
-import type { CustomerUpdateUsecase } from "./usecases/update-customer"
+import type { CustomerCreationUsecase } from "../usecases/create-customer"
+import type { CustomerUpdateUsecase } from "../usecases/update-customer"
 import { Interface } from "utils/type"
-import { CustomerDeletionUsecase } from "./usecases/delete-customer"
+import { CustomerDeletionUsecase } from "../usecases/delete-customer"
 
 export function registerCustomerRoutes(deps: {
   httpServer: FastifyInstance,

@@ -1,12 +1,12 @@
 import './env'
-import { registerCustomerRoutes } from 'customer/customer-controller'
+import { registerCustomerRoutes } from 'customer/controllers/customer-http-controller'
 import { makeServer } from 'web/fastify-http-server'
 import { CustomerCreationUsecase } from 'customer/usecases/create-customer'
 import { InMemoryCustomerRepository } from 'customer/customer-repository'
-import { NanoCustomerIdGenerator } from 'customer/customer-id-generator'
-import { Customer } from 'customer/entities'
+import { NanoCustomerIdGenerator } from 'customer/services/customer-id-generator'
+import { Customer } from 'customer/customer.entities'
 import { CustomerUpdateUsecase } from 'customer/usecases/update-customer'
-import { registerAuthenticationRoutes } from 'authentication/authentication-controller'
+import { registerAuthenticationRoutes } from 'authentication/controllers/authentication-http-controller'
 import { CustomerDeletionUsecase } from 'customer/usecases/delete-customer'
 
 const server = makeServer()

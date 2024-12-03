@@ -1,4 +1,4 @@
-import { Customer } from "./entities"
+import { Customer } from "../customer.entities"
 import { customAlphabet } from 'nanoid'
 
 export type CustomerIdGenerator = {

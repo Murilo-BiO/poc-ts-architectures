@@ -1,6 +1,6 @@
 import { CustomerRepository } from "customer/customer-repository";
-import { Customer } from "customer/entities";
-import { User } from "user/entities";
+import { Customer } from "customer/customer.entities";
+import { User } from "user/user.entities";
 import { ActionFailedError, NotFoundError, SearchFailedError } from "utils/error";
 import { only } from "utils/only";
 import { Prettify } from "utils/type";

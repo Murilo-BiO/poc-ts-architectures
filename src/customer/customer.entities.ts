@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Schema } from "utils/schema";
-import { userId } from "user/entities";
+import { userId } from "user/user.entities";
 
 // Customer Id
 const customerId = z.string().min(1).trim()

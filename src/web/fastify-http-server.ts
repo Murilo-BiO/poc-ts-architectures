@@ -1,7 +1,7 @@
 import fastify from "fastify"
 import { fastifyCookie } from "@fastify/cookie"
 import { fastifySession } from "@fastify/session"
-import { User } from "user/entities"
+import { User } from "user/user.entities"
 import pretty from 'pino-pretty'
 
 // Extend fastify.session with your custom type.
