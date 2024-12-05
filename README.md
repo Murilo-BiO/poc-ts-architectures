@@ -13,15 +13,19 @@ And keep related code together, in a Feature oriented organization, to see if it
 .
 ├── 📁 src/
 │   ├── 📁 <feature-one>/
+│   │   ├── 📁 controllers/
+│   │   │   ├── 📄 <feature-one>-http-controller.ts
+│   │   │   └── 📄 <feature-one>-cli-controller.ts
+│   │   ├── 📁 services/
+│   │   │   ├── 📄 <service-interface-one>.ts
+│   │   │   └── 📄 <service-interface-two>.ts
 │   │   ├── 📁 usecases/
 │   │   │   ├── 📄 <usecase-one>.ts
 │   │   │   └── 📄 <usecase-two>.ts
-│   │   ├── 📄 <service-interface-one>.ts
-│   │   ├── 📄 <service-interface-two>.ts
-│   │   ├── 📄 <interface-adapter-one>.ts
-│   │   └── 📄 entities.ts
+│   │   ├── 📄 <domain-component>.ts
+│   │   └── 📄 <feature-one>-entities.ts
 │   ├── 📁 <feature-two>/
-│   │   └── entities.ts
+│   │   └── <feature-two>-entities.ts
 │   ├── 📁 <core-component>/
 │   │   └── ...
 │   ├── 📄 env.ts
