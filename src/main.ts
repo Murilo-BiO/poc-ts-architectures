@@ -1,6 +1,6 @@
 import './env'
 import { registerCustomerRoutes } from 'customer/controllers/customer-http-controller'
-import { makeServer } from 'web/fastify-http-server'
+import { FastifyHttpServer } from 'web/fastify-http-server'
 import { CustomerCreationUsecase } from 'customer/usecases/create-customer'
 import { InMemoryCustomerRepository } from 'customer/customer-repository'
 import { NanoCustomerIdGenerator } from 'customer/services/customer-id-generator'
@@ -9,15 +9,15 @@ import { CustomerUpdateUsecase } from 'customer/usecases/update-customer'
 import { registerAuthenticationRoutes } from 'authentication/controllers/authentication-http-controller'
 import { CustomerDeletionUsecase } from 'customer/usecases/delete-customer'
 
-const server = makeServer()
+const httpServer = new FastifyHttpServer()
 
 async function main() {
   const db: Customer[] = []
   const customerRepo = new InMemoryCustomerRepository(db)
 
-  registerAuthenticationRoutes({ httpServer: server })
+  registerAuthenticationRoutes({ httpServer })
   registerCustomerRoutes({
-    httpServer: server,
+    httpServer,
     customerCreation: new CustomerCreationUsecase({
       customerIdGenerator: new NanoCustomerIdGenerator(),
       customerRepo,
@@ -30,9 +30,9 @@ async function main() {
     })
   })
 
-  server.get('/db', (_, reply) => reply.send(db))
+  httpServer.addEndpoint('GET', '/db', (ctx) => ctx.jsonResponse(db))
 
-  await server.listen({
+  await httpServer.listen({
     host: process.env.HOST,
     port: Number(process.env.PORT)
   })

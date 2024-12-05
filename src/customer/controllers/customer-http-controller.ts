@@ -1,135 +1,143 @@
-import { FastifyInstance } from "fastify"
-import { customerCreationPayloadSchema, customerIdSchema, customerUpdatePayloadSchema } from "../customer.entities"
+import { customerCreationPayloadSchema, customerIdSchema, customerUpdatePayloadSchema } from "../customer-entities"
 import { AlreadyExistsError, BaseError, ensureError, NotFoundError, ParsingError, UnexpectedCollisionError } from "utils/error"
 import { only } from "utils/only"
 import type { CustomerCreationUsecase } from "../usecases/create-customer"
 import type { CustomerUpdateUsecase } from "../usecases/update-customer"
 import { Interface } from "utils/type"
 import { CustomerDeletionUsecase } from "../usecases/delete-customer"
+import { HttpServer, RequestContext } from "utils/http"
+import { err, ok } from "utils/result"
 
 export function registerCustomerRoutes(deps: {
-  httpServer: FastifyInstance,
+  httpServer: HttpServer,
   customerCreation: Interface<CustomerCreationUsecase>
   customerUpdate: Interface<CustomerUpdateUsecase>
   customerDeletion: Interface<CustomerDeletionUsecase>
 }) {
-  const { httpServer: app } = deps
+  const { httpServer: server } = deps
 
-  app.route({
-    method: 'POST',
-    url: '/customers',
-    preHandler: (req, res, done) => {
-      if (!req.session.userId)
-        res.status(401).send({ message: 'Unauthenticated' })
+  server.addEndpoint('POST', '/customers', createCustomer)
+  server.addEndpoint('PATCH', '/customers/:customerId', updateCustomer)
+  server.addEndpoint('DELETE', '/customers/:customerId', deleteCustomer)
 
-      done()
-    },
-    handler: async (req, res) => {
-      const result = await customerCreationPayloadSchema
-        .parse(req.body)
-        .andThenAsync(dto =>
-          deps.customerCreation.execute(req.session.userId, dto)
-        )
+  async function createCustomer(ctx: RequestContext): Promise<Response> {
+    const userId = 'murilo'
 
-      if (result.isErr()) {
-        const error = result.unwrapErr() as BaseError
-        if (error instanceof ParsingError)
-          return res.status(400).send({ issues: error.context })
-        if (error instanceof AlreadyExistsError)
-          return res.status(422).send({ message: 'Customer with same name already exists.' })
-        if (error instanceof UnexpectedCollisionError)
-          return res.status(503).send({ message: 'Try again later.' })
+    const bodyParseResult = await ctx.request.json()
+      .then(json => ok(json))
+      .catch(error => err(ensureError(error)))
 
-        req.log.error(error)
-        return res.status(500).send({ message: 'Internal Server Error' })
-      }
-
-      return res.status(200).send({ customerId: result.unwrap() })
+    if (bodyParseResult.isErr()) {
+      const error = bodyParseResult.unwrapErr()
+      console.error(error)
+      return ctx.responseStatus(500)
+        .jsonResponse({ message: "Failed to process the request's body" })
     }
-  })
 
-  app.route<{ Params: { customerId: string } }>({
-    method: 'PATCH',
-    url: '/customers/:customerId',
-    preHandler: (req, res, done) => {
-      if (!req.session.userId)
-        res.status(401).send({ message: 'Unauthenticated' })
-      done()
-    },
-    handler: async (req, res) => {
-      const userId = req.session.userId
-      const customerIdParse = customerIdSchema.parse2(req.params.customerId)
-      const bodyParseResult = customerUpdatePayloadSchema.parse2(req.body)
-      
-      if (!customerIdParse.success)
-        return res.status(400).send({
-          message: req.params.customerId ? 'Invalid customerId in URL params' : 'Missing customerId in URL params',
+    const result = await bodyParseResult
+      .andThen(body => customerCreationPayloadSchema.parse(body))
+      .andThenAsync(dto => deps.customerCreation.execute(userId, dto))
+
+    if (result.isErr()) {
+      const error = result.unwrapErr() as BaseError
+      if (error instanceof ParsingError)
+        return ctx.responseStatus(400).jsonResponse({ issues: error.context })
+      if (error instanceof AlreadyExistsError)
+        return ctx.responseStatus(422).jsonResponse({ message: 'Customer with same name already exists.' })
+      if (error instanceof UnexpectedCollisionError)
+        return ctx.responseStatus(503).jsonResponse({ message: 'Try again later.' })
+
+      console.error(error)
+      return ctx.responseStatus(500).jsonResponse({ message: 'Internal Server Error' })
+    }
+
+    return ctx.responseStatus(200).jsonResponse({ customerId: result.unwrap() })
+  }
+
+  async function updateCustomer(ctx: RequestContext<{ customerId: string }>): Promise<Response> {
+    // const userId = req.session.userId
+    const userId = 'murilo'
+    const customerIdParse = customerIdSchema.parse2(ctx.params.customerId)
+
+    let body: unknown
+    try {
+      body = await ctx.request.json()
+    } catch (err) {
+      const error = ensureError(err)
+
+      console.error(error)
+      return ctx.responseStatus(500)
+        .jsonResponse({ message: "Failed to process the request's body" })
+    }
+
+    const bodyParseResult = customerUpdatePayloadSchema.parse2(body)
+    
+    if (!customerIdParse.success)
+      return ctx.responseStatus(400)
+        .jsonResponse({
+          message: ctx.params.customerId ? 'Invalid customerId in URL params' : 'Missing customerId in URL params',
           issues: customerIdParse.error.context
         })
 
-      if (!bodyParseResult.success)
-        return res.status(400).send({
-          message: req.body ? 'Invalid Payload' : 'Request Body is required',
+    if (!bodyParseResult.success)
+      return ctx.responseStatus(400)
+        .jsonResponse({
+          message: body ? 'Invalid Payload' : 'Request Body is required',
           issues: bodyParseResult.error.context
         })
 
-      try {
-        await deps.customerUpdate.execute({
-          userId,
-          customerId: customerIdParse.data,
-          payload: bodyParseResult.data
-        })
+    try {
+      await deps.customerUpdate.execute({
+        userId,
+        customerId: customerIdParse.data,
+        payload: bodyParseResult.data
+      })
 
-        return res.status(204).send()
-      } catch (e) {
-        const error = ensureError(e)
-        req.log.debug(error)
+      return ctx.responseStatus(204).emptyResponse()
+    } catch (e) {
+      const error = ensureError(e)
+      console.debug(error)
 
-        if (error instanceof AlreadyExistsError)
-          return res.status(422).send(only(error, 'message'))
-        if (error instanceof NotFoundError)
-          return res.status(404).send({ message: 'Resource Not Found' })
+      if (error instanceof AlreadyExistsError)
+        return ctx.responseStatus(422).jsonResponse(only(error, 'message'))
+      if (error instanceof NotFoundError)
+        return ctx.responseStatus(404).jsonResponse({ message: 'Resource Not Found' })
 
-        req.log.error(error)
-        return res.status(500).send({ message: 'Internal Server Error' })
-      }
+      console.error(error)
+      return ctx.responseStatus(500).jsonResponse({ message: 'Internal Server Error' })
     }
-  })
+  }
 
-  app.route<{ Params: { customerId: string } }>({
-    method: 'DELETE',
-    url: '/customers/:customerId',
-    preHandler: (req, res, done) => {
-      if (!req.session.userId)
-        res.status(401).send({ message: 'Unauthenticated' })
-      done()
-    },
-    handler: async (req, res) => {
-      const userId = req.session.userId
-      const [parseErr, customerId] = customerIdSchema.parse3(req.params.customerId)
+  async function deleteCustomer(ctx: RequestContext<{ customerId: string }>): Promise<Response> {
+    // const userId = req.session.userId
+    const userId = 'murilo'
 
-      if (parseErr)
-        return res.status(400).send({
-          message: req.params.customerId ? 'Invalid customerId in URL params' : 'Missing customerId in URL params',
+    const [parseErr, customerId] = customerIdSchema.parse3(ctx.params.customerId)
+
+    if (parseErr)
+      return ctx.responseStatus(400)
+        .jsonResponse({
+          message: ctx.params.customerId ? 'Invalid customerId in URL params' : 'Missing customerId in URL params',
           issues: parseErr.context
         })
 
-      const [deletionErr] = await deps.customerDeletion.execute({
-        customerId: customerId!,
-        userId
-      })
+    const [deletionErr] = await deps.customerDeletion.execute({
+      customerId: customerId!,
+      userId
+    })
 
-      if (deletionErr) {
-        req.log.debug(deletionErr)
-        if (deletionErr instanceof NotFoundError)
-          return res.status(404).send({ message: 'Resource Not Found' })
-        
-        req.log.error(deletionErr)
-        return res.status(500).send({ message: "Internal Server Error" })
-      }
-
-      return res.status(204).send()
+    if (deletionErr) {
+      console.debug(deletionErr)
+      if (deletionErr instanceof NotFoundError)
+        return ctx.responseStatus(404)
+          .jsonResponse({ message: 'Resource Not Found' })
+      
+      console.error(deletionErr)
+      return ctx.responseStatus(500)
+        .jsonResponse({ message: "Internal Server Error" })
     }
-  })
+
+    return ctx.responseStatus(204).emptyResponse()
+  }
 
 }
