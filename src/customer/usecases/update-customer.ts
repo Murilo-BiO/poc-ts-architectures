@@ -1,6 +1,6 @@
 import { CustomerRepository } from "customer/customer-repository";
-import { Customer, CustomerUpdatePayload } from "customer/customer.entities";
-import { User } from "user/user.entities";
+import { Customer, CustomerUpdatePayload } from "customer/customer-entities";
+import { User } from "user/user-entities";
 import { ActionFailedError, AlreadyExistsError, ensureError, NotFoundError, SearchFailedError } from "utils/error";
 import { only } from "utils/only";
 import { Prettify } from "utils/type";

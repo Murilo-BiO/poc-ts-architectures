@@ -1,11 +1,11 @@
-import { Customer, CustomerCreationPayload } from "customer/customer.entities";
+import { Customer, CustomerCreationPayload } from "customer/customer-entities";
 import { CustomerRepository } from "../customer-repository";
 import { err, ok, Result } from "utils/result";
 import { Option } from "utils/option";
 import { CustomerIdGenerator } from "../services/customer-id-generator";
 import { ActionFailedError, AlreadyExistsError, SearchFailedError, UnexpectedCollisionError } from "utils/error";
 import { only } from "utils/only";
-import { User } from "user/user.entities";
+import { User } from "user/user-entities";
 
 type CustomerCreationError =
   | SearchFailedError
