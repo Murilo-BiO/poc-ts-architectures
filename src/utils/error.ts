@@ -29,6 +29,22 @@ export class BaseError<T extends Jsonable = Jsonable> extends Error {
   }
 }
 
+export function trySync<T>(cb: () => T): [BaseError?, T?] {
+	try {
+		return [, cb()]
+	} catch (err) {
+		return [ensureError(err)]
+	}
+}
+
+export async function tryAsync<T>(promise: Promise<T>): Promise<[BaseError?, T?]> {
+	try {
+		return [, await promise]
+	} catch (err) {
+		return [ensureError(err)]
+	}
+}
+
 // Common errors
 export class AlreadyExistsError extends BaseError {}
 export class NotFoundError extends BaseError {}
